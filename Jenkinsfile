@@ -15,11 +15,10 @@ node {
        app = docker.build("{aws ecr url}/ecr")
     }
 
-    // ECR 주소 및 사전에 jenkins에서 등록한 ecr Crendential 이름 입력
-    stage('Push image') {       
-        // BUILD_NUMBER는 Jenkins의 기본 환경 변수로 현재 JEnkins의 빌드 번호를 의미
-        // push() 안에 있는 Jenkins 빌드 번호로 이미지 태그가 지정된 후 ecr로 push 됨
-        // ecr:ap-northeast-2:ecr-credentials 은 jenkins에 등록한 AWS Credential 이름
+    // 사용자 정의 Docker Registry를 사용하려면 withRegistry() 사용 필요
+    // ecr:ap-northeast-2:ecr-credentials은 jenkins에 등록한 AWS Credential 이름
+    // BUILD_NUMBER는 Jenkins의 기본 환경 변수로 현재 Jenkins의 빌드 번호를 의미, push() 안에 있는 Jenkins 빌드 번호로 이미지 태그가 지정된 후 ecr로 push
+    stage('Push image') {
         docker.withRegistry('https://{aws ecr url}', 'ecr:ap-northeast-2:ecr-credentials') {
             app.push("${env.BUILD_NUMBER}")
         }
@@ -28,6 +27,7 @@ node {
     stage('Trigger ManifestUpdate') {
                 // Jenkins 작업 콘솔에 출력되는 메시지
                 echo "triggering updatemanifestjob"
+        
                 // 새로운 Jenkins Job을 트리거 하는 명령어
                 // 현재 Job이 끝나면 'updatemanifest'라는 job을 트리거하고, env.BUILD_NUMBER 파라미터를 DOCKERTAG'이라는 이름으로 전달
                 build job: 'updatemanifest', parameters: [string(name: 'DOCKERTAG', value: env.BUILD_NUMBER)]
